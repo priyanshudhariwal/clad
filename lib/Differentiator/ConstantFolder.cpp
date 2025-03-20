@@ -168,6 +168,16 @@ namespace clad {
     } else if (QT->isRealFloatingType()) {
       llvm::APFloat APVal(C.getFloatTypeSemantics(QT), val);
       Result = clad::synthesizeLiteral(QT, C, APVal);
+    } else if (const TypedefType* TDT = QT->getAs<TypedefType>()){
+      //for typedefs using underlying type
+      QualType underlyingType = TDT->desugar();
+      Result = ConstantFolder::synthesizeLiteral(underlyingType, C, val);
+    } else if (QT->isComplexType()){
+      //for complex numbers, create a zero initialised complex value
+      Result = new (C) ImplicitValueInitExpr(QT);
+    } else if (QT->isStructureOrClassType()){
+      //for structs/classes, create a zero initialised instance
+      Result = new (C) ImplicitValueInitExpr(QT);
     } else {
       // FIXME: Handle other types, like Complex, Structs, typedefs, etc.
       // typecasting may be needed right now
